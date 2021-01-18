@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import random
 import redis
-import mnist
+from mnist import MNIST
 
 from neurons import LIFNeuron as LIF
 from utils import graph_results as graph, image_utils
@@ -21,6 +21,9 @@ debug=True
 image, label = image_utils.get_next_image(pick_random = True)  #index=0)
 
 image_utils.graph_retinal_image(image, stride)
+
+len_x = 28
+len_y = 28
 
 neurons = []
 print('Creating {} x {} neurons'.format(len_x, len_y))
@@ -40,7 +43,7 @@ print(len_x, len_y)
 #    for x in range(start_x, start_x + stride_size, 1):
 for y in range(0, len_y, 1):
     for x in range(0, len_x, 1):
-        stimulus = np.full((time), image_norm[y,x])
+        stimulus = np.full((time), image[y,x])
         print('Stimulus from image @ {}/{}: {}'.format(y, x, stimulus))
         print('Processing spike generator for neuron {}/{}: {}'.format(y,x,neurons[y][x].neuron_label))
         neurons[y][x].spike_generator(stimulus)
