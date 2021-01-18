@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 from mnist import MNIST
 
-mndata = MNIST('Z:\SNN\SNN(LIFmodel)') #Put your directory where you downloaded the files 
+mndata = MNIST('.\dirMNIST') #Put your directory where you downloaded the files 
 images, labels = mndata.load_training()
 
 
