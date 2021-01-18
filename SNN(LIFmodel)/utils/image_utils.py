@@ -2,8 +2,9 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 
-import mnist 
-mndata = MNIST('./dir_with_mnist_data_files')
+from mnist import MNIST
+
+mndata = MNIST('Z:\SNN\SNN(LIFmodel)') #Put your directory where you downloaded the files 
 images, labels = mndata.load_training()
 
 
