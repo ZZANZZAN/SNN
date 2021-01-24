@@ -73,7 +73,7 @@ for x1 in range(0, len_x_l2, 1):
             for y2 in range(kernel_size):
             	x = x1+x2
             	y = y1+y2
-            	stimulus_ret_unit += neurons[x][y].spikes[:time] * mult_factor * conv_kernel_layer2_1[x2][y2]
+            	stimulus_ret_unit += neurons_l1[x][y].spikes[:time] * mult_factor * conv_kernel_layer2_1[x2][y2]
         l2_neuron_stimulus[l2x,l2y,:] = stimulus_ret_unit
         l2y += 1
     l2x += 1
@@ -81,3 +81,14 @@ for x1 in range(0, len_x_l2, 1):
 for x in range(len_x_l2):
     for y in range(len_y_l2):
         neurons_l2[x][y].spike_generator(l2_neuron_stimulus[x][y])
+
+# Инициализация третьего (подвыборочного) слоя
+neurons_l3 = []
+len_x_l3 = int(len_x_l2/stride[1])
+len_y_l3 = int(len_y_l2/stride[1])
+
+for y in range (0, len_y_l3, 1):
+    neuron_row=[]
+    for x in range(0, len_x_l3, 1):
+        neuron_row.append(LIF.LIFNeuron(neuron_label="L3:{}/{}".format(y,x), debug=debug))
+    neurons_l3.append(neuron_row)
