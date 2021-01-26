@@ -13,7 +13,7 @@ dt = 0.01
 time = int(T / dt)
 _T = 1
 stride = (4, 3, 2)   
-kernel_size = 5
+kernel_size = 3
 num_feature_maps = 20
 debug=False
 #image, label = image_utils.get_next_image(pick_random = True)  
@@ -24,7 +24,7 @@ len_y = 28
 
 # Инициализация первого (входного) слоя
 neurons_l1 = []
-print('Creating {} x {} neurons layer 1'.format(len_x, len_y))
+# print('Creating {} x {} neurons layer 1'.format(len_x, len_y))
 for y in range (0, len_y, 1):
     neuron_row=[]
     for x in range(0, len_x, 1):
@@ -68,14 +68,18 @@ for d in range(0,num_feature_maps,1):
         	l2y += 1
     	l2x += 1
 
-for x in range(len_x_l2):
-    for y in range(len_y_l2):
-        neurons_l2[x][y].spike_generator(neuron_l2_stimulus[x,y,:,d])
+data_neuron_l2 = np.zeros((len_x_l2, len_y_l2, time, num_feature_maps))    	
+for d in range(0,num_feature_maps,1): 
+	for x in range(len_x_l2):
+    	for y in range(len_y_l2):
+        	neurons_l2[x][y].spike_generator(neuron_l2_stimulus[x,y,:,d])
+    data_neuron_l2[:,:,:,d] = neurons_l2[:,:].spikes[:]
+
 
 # Инициализация третьего (подвыборочного) слоя
 neurons_l3 = []
-len_x_l3 = int(len_x_l2/stride[1])
-len_y_l3 = int(len_y_l2/stride[1])
+len_x_l3 = int(len_x_l2/stride[2])
+len_y_l3 = int(len_y_l2/stride[2])
 
 for y in range (0, len_y_l3, 1):
     neuron_row=[]
