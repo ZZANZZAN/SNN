@@ -81,8 +81,34 @@ neurons_l3 = []
 len_x_l3 = int(len_x_l2/stride[2])
 len_y_l3 = int(len_y_l2/stride[2])
 
+neuron_l3_stimulus = np.zeros((len_x_l3, len_y_l3, time, num_feature_maps))
+
+pool_kernel_l3 = np.array([[0.25,0.25],[0.25,0.25]])
+
 for y in range (0, len_y_l3, 1):
     neuron_row=[]
     for x in range(0, len_x_l3, 1):
         neuron_row.append(LIF.LIFNeuron(neuron_label="L3:{}/{}".format(y,x), debug=debug))
     neurons_l3.append(neuron_row)
+
+for d in range(0,num_feature_maps,1):
+	l2x, l2y = 0,0
+	for x1 in range(0, len_x_l3, stride[2]):
+		l2y = 0
+    	for y1 in range(0, len_y_l3, stride[2]):
+    		stimulus_ret_unit = np.zeros(time)
+    		for x2 in range(stride[2]):
+            	for y2 in range(stride[2]):
+            		x = x1+x2
+            		y = y1+y2
+            		stimulus_ret_unit += data_neuron_l2[x,y,:,d] * mult_factor * pool_kernel_l3[x2][y2]
+        	neuron_l3_stimulus[l2x,l2y,:,d] = stimulus_ret_unit
+        	l2y += 1
+    	l2x += 1
+
+data_neuron_l3 = np.zeros((len_x_l3, len_y_l3, time, num_feature_maps))    	
+for d in range(0,num_feature_maps,1): 
+	for x in range(len_x_l3):
+    	for y in range(len_y_l3):
+        	neurons_l3[x][y].spike_generator(neuron_l3_stimulus[x,y,:,d])
+    data_neuron_l3[:,:,:,d] = neurons_l3[:,:].spikes[:]
