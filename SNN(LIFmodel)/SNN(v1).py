@@ -15,7 +15,7 @@ _T = 1
 stride = (4, 3, 2)   
 kernel_size = 3
 num_feature_maps = 20
-debug=True
+debug=False 
 image, label = image_utils.get_next_image(pick_random = True)  
 #image_utils.graph_retinal_image(image, stride)
 
@@ -73,7 +73,9 @@ for d in range(0,num_feature_maps,1):
 	for x in range(len_x_l2):
 		for y in range(len_y_l2):
 			neurons_l2[x][y].spike_generator(neuron_l2_stimulus[x,y,:,d])
-	data_neuron_l2[:,:,:,d] = neurons_l2[:,:].spikes[:]
+	for x in range(len_x_l2):
+		for y in range(len_y_l2):
+			data_neuron_l2[x,y,:,d] = neurons_l2[x][y].spikes[:time]
 
 
 # Инициализация третьего (подвыборочного) слоя
@@ -111,4 +113,6 @@ for d in range(0,num_feature_maps,1):
 	for x in range(len_x_l3):
 		for y in range(len_y_l3):
 			neurons_l3[x][y].spike_generator(neuron_l3_stimulus[x,y,:,d])
-	data_neuron_l3[:,:,:,d] = neurons_l3[:,:].spikes[:]
+	for x in range(len_x_l3):
+		for y in range(len_y_l3):
+			data_neuron_l3[x,y,:,d] = neurons_l3[x][y].spikes[:time]
