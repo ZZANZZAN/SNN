@@ -69,3 +69,10 @@ class LIFNeuron():
                    .format(self.neuron_label, self.Vm.shape, i, self.t))
 
             # return time, Vm, output
+    
+    def neuron_cleaning(self):
+        self.t_rest = 0
+        self.t = 0
+        self.Vm = np.array([0])
+        self.time = np.array([0])  
+        self.spikes = np.array([0])  
