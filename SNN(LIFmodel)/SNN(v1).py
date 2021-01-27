@@ -14,7 +14,7 @@ time = int(T / dt)
 _T = 1
 stride = (4, 3, 2)   
 kernel_size = 3
-num_feature_maps = 20
+num_feature_maps = 10
 debug=False 
 image, label = image_utils.get_next_image(pick_random = True)  
 #image_utils.graph_retinal_image(image, stride)
@@ -73,10 +73,12 @@ for d in range(0,num_feature_maps,1):
 	for x in range(len_x_l2):
 		for y in range(len_y_l2):
 			neurons_l2[x][y].spike_generator(neuron_l2_stimulus[x,y,:,d])
-	for x in range(len_x_l2):
-		for y in range(len_y_l2):
 			data_neuron_l2[x,y,:,d] = neurons_l2[x][y].spikes[:time]
-
+			if x == 12 and y == 12:
+				ny, nx = 12, 12
+				graph.plot_spikes(neurons_l2[ny][nx].time, neurons_l2[ny][nx].spikes, 'Output Spikes for {}'.format(neurons_l2[ny][nx].type), neuron_id = '{}/{}'.format(ny, nx))
+				graph.plot_membrane_potential(neurons_l2[ny][nx].time, neurons_l2[ny][nx].Vm, 'Membrane Potential {}'.format(neurons_l2[ny][nx].type), neuron_id = '{}/{}'.format(ny, nx))
+			neurons_l2[x][y].neuron_cleaning()
 
 # Инициализация третьего (подвыборочного) слоя
 neurons_l3 = []
@@ -85,7 +87,7 @@ len_y_l3 = int(len_y_l2/stride[2])
 
 neuron_l3_stimulus = np.zeros((len_x_l3, len_y_l3, time, num_feature_maps))
 
-pool_kernel_l3 = np.array([[0.25,0.25],[0.25,0.25]])
+pool_kernel_l3 = np.array([[1,1],[1,1]])
 
 for y in range (0, len_y_l3, 1):
 	neuron_row=[]
@@ -113,6 +115,25 @@ for d in range(0,num_feature_maps,1):
 	for x in range(len_x_l3):
 		for y in range(len_y_l3):
 			neurons_l3[x][y].spike_generator(neuron_l3_stimulus[x,y,:,d])
+			data_neuron_l3[x,y,:,d] = neurons_l3[x][y].spikes[:time]
+			if x == 6 and y == 6:
+				ny, nx = 6, 6
+				graph.plot_spikes(neurons_l3[ny][nx].time, neurons_l3[ny][nx].spikes, 'Output Spikes for {}'.format(neurons_l3[ny][nx].type), neuron_id = '{}/{}'.format(ny, nx))
+				graph.plot_membrane_potential(neurons_l3[ny][nx].time, neurons_l3[ny][nx].Vm, 'Membrane Potential {}'.format(neurons_l3[ny][nx].type), neuron_id = '{}/{}'.format(ny, nx))
+			neurons_l3[x][y].neuron_cleaning()
+
+# создание полносвязного слоя 
+num_full_con_lay = num_feature_maps*len_x_l3*len_y_l3
+full_con_lay = []
+full_con_lay_W = (0.5 - (-0.5))*np.random.random((num_full_con_lay)) - 0.5
+for x in range(num_full_con_lay):
+	full_con_lay.append(LIF.LIFNeuron(neuron_label="FCL:{}".format(x), debug=debug))
+
+neuron_full_stimulus = np.zeros(time)
+x1 = 0
+for d in range(0,num_feature_maps,1): 
 	for x in range(len_x_l3):
 		for y in range(len_y_l3):
-			data_neuron_l3[x,y,:,d] = neurons_l3[x][y].spikes[:time]
+			for num in range(time): neuron_full_stimulus[num] = data_neuron_l3[x,y,num,d]*full_con_lay_W[x1]
+			full_con_lay[x1].spike_generator(neuron_full_stimulus[:time])
+			x1 += 1
