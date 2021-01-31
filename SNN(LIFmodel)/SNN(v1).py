@@ -15,6 +15,7 @@ _T = 1
 stride = (4, 3, 2)   
 kernel_size = 3
 num_feature_maps = 10
+num_out_neuron = 10
 debug=False 
 image, label = image_utils.get_next_image(pick_random = True)  
 #image_utils.graph_retinal_image(image, stride)
@@ -137,3 +138,16 @@ for d in range(0,num_feature_maps,1):
 			for num in range(time): neuron_full_stimulus[num] = data_neuron_l3[x,y,num,d]*full_con_lay_W[x1]
 			full_con_lay[x1].spike_generator(neuron_full_stimulus[:time])
 			x1 += 1
+
+# создание выходного слоя 
+full_out_lay_W = (0.5 - (-0.5))*np.random.random((num_full_con_lay, num_feature_maps)) - 0.5
+full_out_lay = []
+for x in range(num_out_neuron):
+	full_out_lay.append(LIF.LIFNeuron(neuron_label="FOL:{}".format(x), debug=debug))
+
+for d in range(0,num_out_neuron,1):
+	stimulus_ret_unit = np.zeros(time) 
+	for x in range(num_full_con_lay):
+		stimulus_ret_unit += full_con_lay[x].spikes[:time]*full_out_lay_W[x][d]
+	full_out_lay[d].spike_generator(stimulus_ret_unit)
+
