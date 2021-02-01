@@ -18,6 +18,7 @@ num_feature_maps = 10
 num_out_neuron = 10
 debug=False 
 image, label = image_utils.get_next_image(pick_random = True)
+nu_BP = 0.5
 
 mult_factor = 100
 
@@ -32,7 +33,7 @@ len_y_l3 = int(len_y_l2/stride[2])
 
 num_full_con_lay = num_feature_maps*len_x_l3*len_y_l3
 
-creating_weights.cr_W(kernel_size, num_feature_maps, num_full_con_lay)
+#creating_weights.cr_W(kernel_size, num_feature_maps, num_full_con_lay) #раскоментить чтобы сгенерить новые веса
 
 conv_kernel_layer2 = np.load('data_weight/conv_kernel_layer2.npy')
 full_con_lay_W = np.load('data_weight/full_con_lay_W.npy')
@@ -160,9 +161,23 @@ for d in range(0,num_out_neuron,1):
 	#graph.plot_membrane_potential(full_out_lay[d].time, full_out_lay[d].Vm, 'Membrane Potential {}'.format(full_out_lay[d].type), neuron_id = '{}'.format(d))
 
 net_out_lay = np.zeros(num_out_neuron)
-
+output = np.zeros(num_out_neuron)
 for d in range(0, num_out_neuron, 1):
 	for x in range(num_full_con_lay):
 		net_out_lay[d] += full_out_lay_W[x][d] * sum(full_con_lay[x].spikes[:time]) 
-	output = net_out_lay[d]/T
-	print("Output № {}: {}".format(d, output))
+	output[d] = net_out_lay[d]/T
+	print("Output № {}: {}".format(d, output[d]))
+
+#вычисление ошибки нейронов выходного слоя
+q_L = np.zeros(num_out_neuron)
+for d in range(0, num_out_neuron, 1):
+	q_L[d] = net_out_lay[d]/T
+for d in range(0, num_out_neuron, 1):
+	if d == label: q_L[d] -= 1
+	q_L[d] = q_L[d]/T
+
+#вычисление ошибки нейронов полносвязного слоя
+q_L1 = np.zeros(num_full_con_lay)
+for d in range(0, num_full_con_lay, 1):
+	W_Tr = full_out_lay_W[d][:num_out_neuron].transpose()
+	q_L1[d] = W_Tr.dot(q_L)
