@@ -19,6 +19,8 @@ num_out_neuron = 10
 debug=False 
 image, label = image_utils.get_next_image(pick_random = True)
 
+mult_factor = 100
+
 len_x = 28
 len_y = 28 
 
@@ -30,7 +32,7 @@ len_y_l3 = int(len_y_l2/stride[2])
 
 num_full_con_lay = num_feature_maps*len_x_l3*len_y_l3
 
-#creating_weights.cr_W(kernel_size, num_feature_maps, num_full_con_lay)
+creating_weights.cr_W(kernel_size, num_feature_maps, num_full_con_lay)
 
 conv_kernel_layer2 = np.load('data_weight/conv_kernel_layer2.npy')
 full_con_lay_W = np.load('data_weight/full_con_lay_W.npy')
@@ -62,7 +64,7 @@ for y in range (0, len_y_l2, 1):
 	neurons_l2.append(neuron_row)
 
 neuron_l2_stimulus = np.zeros((len_x_l2, len_y_l2, time, num_feature_maps))
-mult_factor = 50
+
 
 for d in range(0,num_feature_maps,1):
 	l2x, l2y = 0,0
@@ -74,8 +76,8 @@ for d in range(0,num_feature_maps,1):
 				for y2 in range(kernel_size):
 					x = x1+x2
 					y = y1+y2
-					stimulus_ret_unit += neurons_l1[x][y].spikes[:time] * mult_factor * conv_kernel_layer2[x2,y2,d]
-			neuron_l2_stimulus[l2x,l2y,:,d] = stimulus_ret_unit
+					stimulus_ret_unit += neurons_l1[x][y].spikes[:time] * conv_kernel_layer2[x2,y2,d]* mult_factor
+			neuron_l2_stimulus[l2x,l2y,:time,d] = stimulus_ret_unit
 			l2y += 1
 		l2x += 1
 
@@ -84,7 +86,7 @@ for d in range(0,num_feature_maps,1):
 	for x in range(len_x_l2):
 		for y in range(len_y_l2):
 			neurons_l2[x][y].spike_generator(neuron_l2_stimulus[x,y,:,d])
-			data_neuron_l2[x,y,:,d] = neurons_l2[x][y].spikes[:time]
+			data_neuron_l2[x,y,:time,d] = neurons_l2[x][y].spikes[:time]
 			if x == 12 and y == 12:
 				ny, nx = 12, 12
 				#graph.plot_spikes(neurons_l2[ny][nx].time, neurons_l2[ny][nx].spikes, 'Output Spikes for {}'.format(neurons_l2[ny][nx].type), neuron_id = '{}/{}'.format(ny, nx))
@@ -112,8 +114,8 @@ for d in range(0,num_feature_maps,1):
 				for y2 in range(stride[2]):
 					x = x1+x2
 					y = y1+y2
-					stimulus_ret_unit += data_neuron_l2[x,y,:,d] * mult_factor * pool_kernel_l3[x2][y2]
-			neuron_l3_stimulus[l2x,l2y,:,d] = stimulus_ret_unit
+					stimulus_ret_unit += data_neuron_l2[x,y,:time,d] * pool_kernel_l3[x2][y2]* mult_factor
+			neuron_l3_stimulus[l2x,l2y,:time,d] = stimulus_ret_unit
 			l2y += 1
 		l2x += 1
 
@@ -121,8 +123,8 @@ data_neuron_l3 = np.zeros((len_x_l3, len_y_l3, time, num_feature_maps))
 for d in range(0,num_feature_maps,1): 
 	for x in range(len_x_l3):
 		for y in range(len_y_l3):
-			neurons_l3[x][y].spike_generator(neuron_l3_stimulus[x,y,:,d])
-			data_neuron_l3[x,y,:,d] = neurons_l3[x][y].spikes[:time]
+			neurons_l3[x][y].spike_generator(neuron_l3_stimulus[x,y,:time,d])
+			data_neuron_l3[x,y,:time,d] = neurons_l3[x][y].spikes[:time]
 			if x == 6 and y == 6:
 				ny, nx = 6, 6
 				#graph.plot_spikes(neurons_l3[ny][nx].time, neurons_l3[ny][nx].spikes, 'Output Spikes for {}'.format(neurons_l3[ny][nx].type), neuron_id = '{}/{}'.format(ny, nx))
@@ -140,7 +142,7 @@ x1 = 0
 for d in range(0,num_feature_maps,1): 
 	for x in range(len_x_l3):
 		for y in range(len_y_l3):
-			for num in range(time): neuron_full_stimulus[num] = data_neuron_l3[x,y,num,d]*full_con_lay_W[x1]
+			neuron_full_stimulus = data_neuron_l3[x,y,:time,d]*full_con_lay_W[x1]* mult_factor
 			full_con_lay[x1].spike_generator(neuron_full_stimulus[:time])
 			x1 += 1
 
@@ -152,5 +154,15 @@ for x in range(num_out_neuron):
 for d in range(0,num_out_neuron,1):
 	stimulus_ret_unit = np.zeros(time) 
 	for x in range(num_full_con_lay):
-		stimulus_ret_unit += full_con_lay[x].spikes[:time]*full_out_lay_W[x][d]
+		stimulus_ret_unit += full_con_lay[x].spikes[:time]*full_out_lay_W[x][d]* mult_factor
 	full_out_lay[d].spike_generator(stimulus_ret_unit)
+	#graph.plot_spikes(full_out_lay[d].time, full_out_lay[d].spikes, 'Output Spikes for {}'.format(full_out_lay[d].type), neuron_id = '{}'.format(d))
+	#graph.plot_membrane_potential(full_out_lay[d].time, full_out_lay[d].Vm, 'Membrane Potential {}'.format(full_out_lay[d].type), neuron_id = '{}'.format(d))
+
+net_out_lay = np.zeros(num_out_neuron)
+
+for d in range(0, num_out_neuron, 1):
+	for x in range(num_full_con_lay):
+		net_out_lay[d] += full_out_lay_W[x][d] * sum(full_con_lay[x].spikes[:time]) 
+	output = net_out_lay[d]/T
+	print("Output № {}: {}".format(d, output))
