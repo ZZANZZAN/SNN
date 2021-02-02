@@ -189,6 +189,10 @@ for d in range(0, num_full_con_lay, 1):
 	q_L1[d] = W_Tr.dot(q_L)
 
 #вычисление ошибки нейронов подвыборочного слоя
-q_L2 = np.zeros(num_full_con_lay)
-for d in range(0, num_full_con_lay, 1):
-	q_L2[d] = full_con_lay_W[d] * q_L1[d]
+x1 = 0
+q_L2 = np.zeros((len_x_l3, len_y_l3, num_feature_maps))
+for d in range(0,num_feature_maps,1): 
+	for x in range(len_x_l3):
+		for y in range(len_y_l3):
+			q_L2[x, y, d] = full_con_lay_W[x1] * q_L1[x1]
+			x1 += 1
