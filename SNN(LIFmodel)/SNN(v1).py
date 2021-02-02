@@ -38,7 +38,8 @@ num_full_con_lay = num_feature_maps*len_x_l3*len_y_l3
 conv_kernel_layer2 = np.load('data_weight/conv_kernel_layer2.npy')
 full_con_lay_W = np.load('data_weight/full_con_lay_W.npy')
 full_out_lay_W = np.load('data_weight/full_out_lay_W.npy')
-pool_kernel_l3 = np.load('data_weight/pool_kernel_l3.npy') 
+pool_kernel_l3 = np.load('data_weight/pool_kernel_l3.npy')
+#pool_kernel_l3 = np.array([[1,0.0],[0.0,0.0]]) 
 #image_utils.graph_retinal_image(image, stride)
 
 # Инициализация первого (входного) слоя
@@ -111,11 +112,16 @@ for d in range(0,num_feature_maps,1):
 		l2y = 0
 		for y1 in range(0, len_y_l3, stride[2]):
 			stimulus_ret_unit = np.zeros(time)
+			maxsum = 0
+			#data_x = -1
+			#data_y = -1
 			for x2 in range(stride[2]):
 				for y2 in range(stride[2]):
 					x = x1+x2
 					y = y1+y2
-					stimulus_ret_unit += data_neuron_l2[x,y,:time,d] * pool_kernel_l3[x2][y2]* mult_factor
+					if sum(data_neuron_l2[x,y,:time,d]) > maxsum:
+						maxsum = sum(data_neuron_l2[x,y,:time,d])
+						stimulus_ret_unit = data_neuron_l2[x,y,:time,d] * mult_factor
 			neuron_l3_stimulus[l2x,l2y,:time,d] = stimulus_ret_unit
 			l2y += 1
 		l2x += 1
@@ -181,3 +187,8 @@ q_L1 = np.zeros(num_full_con_lay)
 for d in range(0, num_full_con_lay, 1):
 	W_Tr = full_out_lay_W[d][:num_out_neuron].transpose()
 	q_L1[d] = W_Tr.dot(q_L)
+
+#вычисление ошибки нейронов подвыборочного слоя
+q_L2 = np.zeros(num_full_con_lay)
+for d in range(0, num_full_con_lay, 1):
+	q_L2[d] = full_con_lay_W[d] * q_L1[d]
