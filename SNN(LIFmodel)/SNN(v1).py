@@ -10,7 +10,7 @@ from utils import graph_results as graph, image_utils, creating_weights
 
 T = 20   
 dt = 0.01 
-time = int(T / dt)
+time = 100
 _T = 1
 stride = (4, 3, 2)   
 kernel_size = 3
@@ -18,9 +18,9 @@ num_feature_maps = 10
 num_out_neuron = 10
 debug=False 
 
-nu_BP = 0.5
+nu_BP = 0.003
 
-mult_factor = 100
+mult_factor = 10
 
 len_x = 28
 len_y = 28 
@@ -41,7 +41,7 @@ full_out_lay_W = np.load('data_weight/full_out_lay_W.npy')
 pool_kernel_l3 = np.load('data_weight/pool_kernel_l3.npy')
 #pool_kernel_l3 = np.array([[1,0.0],[0.0,0.0]]) 
 #image_utils.graph_retinal_image(image, stride)
-for num_iter in range(50):
+for num_iter in range(1):
 	print('Iteration number: {}'.format(num_iter))
 	image, label = image_utils.get_next_image(pick_random = True)
 	# Инициализация первого (входного) слоя
