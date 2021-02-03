@@ -4,12 +4,12 @@ import pandas as pd
 import random
 
 def cr_W(kernel_size, num_feature_maps, num_full_con_lay):
-	conv_kernel_layer2 = (0.5 - (-0.3))*np.random.random((kernel_size, kernel_size, num_feature_maps)) - 0.3
-	conv_kernel_layer2.round(1)
-	full_con_lay_W = (0.5 - (-0.3))*np.random.random((num_full_con_lay)) - 0.3
-	full_con_lay_W.round(1)
-	full_out_lay_W = (0.5 - (-0.3))*np.random.random((num_full_con_lay, num_feature_maps)) - 0.3
-	full_out_lay_W.round(1)
+	conv_kernel_layer2 = (0.5 - (-0.1))*np.random.random((kernel_size, kernel_size, num_feature_maps)) - 0.1
+	np.around(conv_kernel_layer2, decimals = 3)
+	full_con_lay_W = (0.5 - (-0.1))*np.random.random((num_full_con_lay)) - 0.1
+	np.around(full_con_lay_W, decimals = 3)
+	full_out_lay_W = (0.5 - (-0.1))*np.random.random((num_full_con_lay, num_feature_maps)) - 0.1
+	np.around(full_out_lay_W, decimals = 3)	
 	pool_kernel_l3 = np.array([[1,1],[1,1]])
 	pool_kernel_l3.round(1)
 
