@@ -234,3 +234,15 @@ for d in range(0,num_feature_maps,1):
 			l2y += 1
 		l2x += 1
 			
+x1 = 0
+for d in range(0,num_feature_maps,1): 
+	for x in range(len_x_l3):
+		for y in range(len_y_l3):
+			full_con_lay_W[x1] = full_con_lay_W[x1] - nu_BP * (sum(data_neuron_l3[x,y,:time,d]) * q_L1[x1])
+			x1 += 1
+
+for d in range(0, num_out_neuron, 1):
+	for x in range(num_full_con_lay):
+		full_out_lay_W[x, d] = full_out_lay_W[x, d] - nu_BP * (sum(full_con_lay[x].spikes[:time]) * q_L[d])
+
+creating_weights.save_W(conv_kernel_layer2, full_con_lay_W, full_out_lay_W, pool_kernel_l3)
