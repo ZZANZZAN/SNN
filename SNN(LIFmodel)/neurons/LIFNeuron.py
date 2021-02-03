@@ -14,8 +14,8 @@ class LIFNeuron():
         self.t = 0  # Neuron time step
         self.Rm = 1  # Resistance (kOhm)
         self.Cm = 10  # Capacitance (uF)
-        self.tau_m = self.Rm * self.Cm  # Time constant
-        self.tau_ref = 4  # refractory period (ms)
+        self.tau_m = 100  # Time constant
+        self.tau_ref = 0.125  # refractory period (ms)
         self.Vth = 0.75  # = 1  #spike threshold
         self.V_spike = 1  # spike delta (V)
         self.type = 'Leaky Integrate and Fire'
@@ -43,7 +43,7 @@ class LIFNeuron():
                 print ('Index {}'.format(i))
 
             if self.t > self.t_rest:
-                Vm[i] = Vm[i - 1] + (-Vm[i - 1] + neuron_input[i - 1] * self.Rm) / self.tau_m * self.dt
+                Vm[i] = Vm[i - 1] + (-Vm[i - 1]/self.tau_m + neuron_input[i - 1] * (1/self.Cm)) 
 
                 if self.debug == 'INFO':
                     print(
