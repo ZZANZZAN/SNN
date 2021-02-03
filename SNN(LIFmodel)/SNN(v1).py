@@ -196,3 +196,25 @@ for d in range(0,num_feature_maps,1):
 		for y in range(len_y_l3):
 			q_L2[x, y, d] = full_con_lay_W[x1] * q_L1[x1]
 			x1 += 1
+
+#вычисление ошибки нейронов сверточного слоя
+q_L3 = np.zeros((len_x_l2, len_y_l2, num_feature_maps))
+for d in range(0,num_feature_maps,1):
+	l2x, l2y = 0,0
+	for x1 in range(0, len_x_l3, stride[2]):
+		l2y = 0
+		for y1 in range(0, len_y_l3, stride[2]):
+			maxsum = 0
+			data_x = -1
+			data_y = -1
+			for x2 in range(stride[2]):
+				for y2 in range(stride[2]):
+					x = x1+x2
+					y = y1+y2
+					if sum(data_neuron_l2[x,y,:time,d]) > maxsum:
+						maxsum = sum(data_neuron_l2[x,y,:time,d])
+						data_x = x
+						data_y = y
+			q_L3[data_x, data_y, d] = q_L2[x1, y1, d]
+			l2y += 1
+		l2x += 1
