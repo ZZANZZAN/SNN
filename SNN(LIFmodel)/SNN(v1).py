@@ -218,3 +218,19 @@ for d in range(0,num_feature_maps,1):
 			q_L3[data_x, data_y, d] = q_L2[x1, y1, d]
 			l2y += 1
 		l2x += 1
+
+#обновление весов сверточного слоя
+for d in range(0,num_feature_maps,1):
+	l2x, l2y = 0,0
+	for x1 in range(0, len_x_l2, 1):
+		l2y = 0
+		for y1 in range(0, len_y_l2, 1):
+			stimulus_ret_unit = np.zeros(time)
+			for x2 in range(kernel_size):
+				for y2 in range(kernel_size):
+					x = x1+x2
+					y = y1+y2
+					conv_kernel_layer2[x2, y2, d] = conv_kernel_layer2[x2, y2, d] - nu_BP * (sum(neurons_l1[x][y].spikes[:time]) * q_L3[l2x, l2y, d])
+			l2y += 1
+		l2x += 1
+			
