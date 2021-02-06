@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import random
 import redis
+import math
 from mnist import MNIST
 
 from neurons import LIFNeuron as LIF
@@ -17,6 +18,7 @@ kernel_size = 3
 num_feature_maps = 10
 num_out_neuron = 10
 debug=False 
+training = True
 
 nu_BP = 0.003
 
@@ -41,7 +43,7 @@ full_out_lay_W = np.load('data_weight/full_out_lay_W.npy')
 pool_kernel_l3 = np.load('data_weight/pool_kernel_l3.npy')
 #pool_kernel_l3 = np.array([[1,0.0],[0.0,0.0]]) 
 #image_utils.graph_retinal_image(image, stride)
-for num_iter in range(1):
+for num_iter in range(10):
 	print('Iteration number: {}'.format(num_iter))
 	image, label = image_utils.get_next_image(pick_random = True)
 	# Инициализация первого (входного) слоя
@@ -96,7 +98,7 @@ for num_iter in range(1):
 					#graph.plot_spikes(neurons_l2[ny][nx].time, neurons_l2[ny][nx].spikes, 'Output Spikes for {}'.format(neurons_l2[ny][nx].type), neuron_id = '{}/{}'.format(ny, nx))
 					#graph.plot_membrane_potential(neurons_l2[ny][nx].time, neurons_l2[ny][nx].Vm, 'Membrane Potential {}'.format(neurons_l2[ny][nx].type), neuron_id = '{}/{}'.format(ny, nx))
 				neurons_l2[x][y].neuron_cleaning()
-
+        
 	# Инициализация третьего (подвыборочного) слоя
 	neurons_l3 = []
 
@@ -175,76 +177,97 @@ for num_iter in range(1):
 			net_out_lay[d] += full_out_lay_W[x][d] * sum(full_con_lay[x].spikes[:time]) 
 		output[d] = net_out_lay[d]/T
 		print("Output № {}: {}".format(d, output[d]))
+	if training:
+		#вычисление ошибки нейронов выходного слоя
+		q_L = np.zeros(num_out_neuron)
+		for d in range(0, num_out_neuron, 1):
+			q_L[d] = net_out_lay[d]/T
+		for d in range(0, num_out_neuron, 1):
+			if d == label: q_L[d] -= 1
+			q_L[d] = q_L[d]/T
 
-	#вычисление ошибки нейронов выходного слоя
-	q_L = np.zeros(num_out_neuron)
-	for d in range(0, num_out_neuron, 1):
-		q_L[d] = net_out_lay[d]/T
-	for d in range(0, num_out_neuron, 1):
-		if d == label: q_L[d] -= 1
-		q_L[d] = q_L[d]/T
+		#вычисление ошибки нейронов полносвязного слоя
+		q_L1 = np.zeros(num_full_con_lay)
+		for d in range(0, num_full_con_lay, 1):
+			W_Tr = full_out_lay_W[d][:num_out_neuron].transpose()
+			q_L1[d] = W_Tr.dot(q_L)
 
-	#вычисление ошибки нейронов полносвязного слоя
-	q_L1 = np.zeros(num_full_con_lay)
-	for d in range(0, num_full_con_lay, 1):
-		W_Tr = full_out_lay_W[d][:num_out_neuron].transpose()
-		q_L1[d] = W_Tr.dot(q_L)
+		#вычисление ошибки нейронов подвыборочного слоя
+		x1 = 0
+		q_L2 = np.zeros((len_x_l3, len_y_l3, num_feature_maps))
+		for d in range(0,num_feature_maps,1): 
+			for x in range(len_x_l3):
+				for y in range(len_y_l3):
+					q_L2[x, y, d] = full_con_lay_W[x1] * q_L1[x1]
+					x1 += 1
 
-	#вычисление ошибки нейронов подвыборочного слоя
-	x1 = 0
-	q_L2 = np.zeros((len_x_l3, len_y_l3, num_feature_maps))
-	for d in range(0,num_feature_maps,1): 
-		for x in range(len_x_l3):
-			for y in range(len_y_l3):
-				q_L2[x, y, d] = full_con_lay_W[x1] * q_L1[x1]
-				x1 += 1
+		#вычисление ошибки нейронов сверточного слоя
+		q_L3 = np.zeros((len_x_l2, len_y_l2, num_feature_maps))
+		for d in range(0,num_feature_maps,1):
+			l2x, l2y = 0,0
+			for x1 in range(0, len_x_l3, stride[2]):
+				l2y = 0
+				for y1 in range(0, len_y_l3, stride[2]):
+					maxsum = 0
+					data_x = -1
+					data_y = -1
+					for x2 in range(stride[2]):
+						for y2 in range(stride[2]):
+							x = x1+x2
+							y = y1+y2
+							if sum(data_neuron_l2[x,y,:time,d]) > maxsum:
+								maxsum = sum(data_neuron_l2[x,y,:time,d])
+								data_x = x
+								data_y = y
+					q_L3[data_x, data_y, d] = q_L2[x1, y1, d]
+					l2y += 1
+				l2x += 1
 
-	#вычисление ошибки нейронов сверточного слоя
-	q_L3 = np.zeros((len_x_l2, len_y_l2, num_feature_maps))
-	for d in range(0,num_feature_maps,1):
-		l2x, l2y = 0,0
-		for x1 in range(0, len_x_l3, stride[2]):
-			l2y = 0
-			for y1 in range(0, len_y_l3, stride[2]):
-				maxsum = 0
-				data_x = -1
-				data_y = -1
-				for x2 in range(stride[2]):
-					for y2 in range(stride[2]):
-						x = x1+x2
-						y = y1+y2
-						if sum(data_neuron_l2[x,y,:time,d]) > maxsum:
-							maxsum = sum(data_neuron_l2[x,y,:time,d])
-							data_x = x
-							data_y = y
-				q_L3[data_x, data_y, d] = q_L2[x1, y1, d]
-				l2y += 1
-			l2x += 1
-
-	#обновление весов сверточного слоя
-	for d in range(0,num_feature_maps,1):
-		l2x, l2y = 0,0
-		for x1 in range(0, len_x_l2, 1):
-			l2y = 0
-			for y1 in range(0, len_y_l2, 1):
-				stimulus_ret_unit = np.zeros(time)
-				for x2 in range(kernel_size):
-					for y2 in range(kernel_size):
-						x = x1+x2
-						y = y1+y2
-						conv_kernel_layer2[x2, y2, d] = conv_kernel_layer2[x2, y2, d] - nu_BP * (sum(neurons_l1[x][y].spikes[:time]) * q_L3[l2x, l2y, d])
-				l2y += 1
-			l2x += 1
+		#обновление весов сверточного слоя
+		for d in range(0,num_feature_maps,1):
+			l2x, l2y = 0,0
+			for x1 in range(0, len_x_l2, 1):
+				l2y = 0
+				for y1 in range(0, len_y_l2, 1):
+					stimulus_ret_unit = np.zeros(time)
+					for x2 in range(kernel_size):
+						for y2 in range(kernel_size):
+							x = x1+x2
+							y = y1+y2
+							df = 0
+							for i in range(0, time, 1):
+								if neurons_l1[x][y].spikes[i] != 0:
+									df += (-1/neurons_l1[x][y].tau_m)*(math.exp(-(time - i)/neurons_l1[x][y].tau_m))
+							dalif = (1/0.75)*(1 + ((1/sum(neurons_l1[x][y].spikes[:time]))*df))
+							#print("242  {}".format(dalif))
+							if math.isnan(dalif): dalif = 1
+							conv_kernel_layer2[x2, y2, d] = conv_kernel_layer2[x2, y2, d] - nu_BP * (sum(neurons_l1[x][y].spikes[:time]) * q_L3[l2x, l2y, d]) * dalif
+					l2y += 1
+				l2x += 1
 			
-	x1 = 0
-	for d in range(0,num_feature_maps,1): 
-		for x in range(len_x_l3):
-			for y in range(len_y_l3):
-				full_con_lay_W[x1] = full_con_lay_W[x1] - nu_BP * (sum(data_neuron_l3[x,y,:time,d]) * q_L1[x1])
-				x1 += 1
+		x1 = 0
+		for d in range(0,num_feature_maps,1): 
+			for x in range(len_x_l3):
+				for y in range(len_y_l3):
+					df = 0
+					for i in range(0, time, 1):
+						if data_neuron_l3[x,y,i,d] != 0:
+							df += (-1/100)*(math.exp(-(time - i)/100))
+					dalif = (1/0.75)*(1 + ((1/sum(data_neuron_l3[x,y,:time,d]))*df))
+					#print("256  {}".format(dalif))
+					if math.isnan(dalif): dalif = 1
+					full_con_lay_W[x1] = full_con_lay_W[x1] - nu_BP * (sum(data_neuron_l3[x,y,:time,d]) * q_L1[x1]) * dalif
+					x1 += 1
 
-	for d in range(0, num_out_neuron, 1):
-		for x in range(num_full_con_lay):
-			full_out_lay_W[x, d] = full_out_lay_W[x, d] - nu_BP * (sum(full_con_lay[x].spikes[:time]) * q_L[d])
+		for d in range(0, num_out_neuron, 1):
+			for x in range(num_full_con_lay):
+				df = 0
+				for i in range(0, time, 1):
+					if full_con_lay[x].spikes[i] != 0:
+						df += (-1/100)*(math.exp(-(time - i)/100))
+				dalif = (1/0.75)*(1 + ((1/sum(full_con_lay[x].spikes[:time]))*df))
+				#print("267  {}".format(dalif))
+				if math.isnan(dalif): dalif = 1
+				full_out_lay_W[x, d] = full_out_lay_W[x, d] - nu_BP * (sum(full_con_lay[x].spikes[:time]) * q_L[d]) * dalif
 
-	creating_weights.save_W(conv_kernel_layer2, full_con_lay_W, full_out_lay_W, pool_kernel_l3)
+		creating_weights.save_W(conv_kernel_layer2, full_con_lay_W, full_out_lay_W, pool_kernel_l3)
